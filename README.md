@@ -1,9 +1,9 @@
 # rune-fs
 
-[![Build](https://github.com/jimvdl/rs-cache/workflows/build/badge.svg)](https://github.com/jimvdl/rs-cache)
+[![Build](https://github.com/jimvdl/rune-fs/workflows/build/badge.svg)](https://github.com/jimvdl/rune-fs)
 [![API](https://docs.rs/rune-fs/badge.svg)](https://docs.rs/rune-fs)
-[![Crate](https://img.shields.io/crates/v/rs-cache)](https://crates.io/crates/rune-fs)
-[![dependency status](https://deps.rs/repo/github/jimvdl/rs-cache/rune-fs/status.svg)](https://deps.rs/repo/github/jimvdl/rs-cache/rune-fs)
+[![Crate](https://img.shields.io/crates/v/rune-fs)](https://crates.io/crates/rune-fs)
+[![dependency status](https://deps.rs/repo/github/jimvdl/rune-fs/status.svg)](https://deps.rs/repo/github/jimvdl/rune-fs)
 
 Read-only, low level, virtual file types for the RuneScape file system.
 
