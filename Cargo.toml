@@ -27,7 +27,7 @@ bzip2 = "0.4"
 memmap2 = "0.5"
 thiserror = "1.0.30"
 serde = { version = "1.0", features = ["derive"], optional = true }
-serde-big-array = { version = "0.3" }
+serde-big-array = { version = "0.3", optional = true }
 lzma-rs = { version = "0.2", optional = true }
 
 [package.metadata.docs.rs]
