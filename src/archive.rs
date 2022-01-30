@@ -102,7 +102,7 @@ impl Iterator for DataBlocks {
 /// 
 /// # Example
 /// 
-/// TODO
+/// TODO This type needs refining so be prepared for breaking changes when using it.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct ArchiveMetadata {
@@ -180,8 +180,6 @@ impl ArchiveFileGroup {
     }
 }
 
-#[cfg(feature = "rs3")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rs3")))]
 impl IntoIterator for ArchiveFileGroup {
     type Item = ArchiveFileData;
     type IntoIter = std::vec::IntoIter<ArchiveFileData>;
@@ -192,8 +190,6 @@ impl IntoIterator for ArchiveFileGroup {
     }
 }
 
-#[cfg(feature = "rs3")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rs3")))]
 impl<'a> IntoIterator for &'a ArchiveFileGroup {
     type Item = &'a ArchiveFileData;
     type IntoIter = Iter<'a, ArchiveFileData>;
