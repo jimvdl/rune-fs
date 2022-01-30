@@ -1,18 +1,4 @@
 //! (De)compression and enciphering/deciphering.
-//!
-//! ```
-//! # use rscache::Cache;
-//! use rscache::codec::{ self, Compression };
-//!
-//! # fn main() -> rscache::Result<()> {
-//! # let cache = Cache::new("./data/osrs_cache")?;
-//! let buffer = cache.read(2, 10)?;
-//!
-//! let decompressed_buffer = codec::decode(&buffer)?;
-//! let compressed_buffer = codec::encode(Compression::Bzip2, &decompressed_buffer, None)?;
-//! # Ok(())
-//! # }
-//! ```
 
 use std::convert::TryFrom;
 #[cfg(feature = "rs3")]

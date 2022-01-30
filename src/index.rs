@@ -411,9 +411,9 @@ fn parse_entry_counts(
 
 #[test]
 fn from_path_correct_extension() -> crate::Result<()> {
-    let index2 = Index::from_path(2, "../data/osrs_cache/main_file_cache.idx2")?;
-    let index15 = Index::from_path(15, "../data/osrs_cache/main_file_cache.idx15")?;
-    let index255 = Index::from_path(255, "../data/osrs_cache/main_file_cache.idx255")?;
+    let index2 = Index::from_path(2, "./data/osrs_cache/main_file_cache.idx2")?;
+    let index15 = Index::from_path(15, "./data/osrs_cache/main_file_cache.idx15")?;
+    let index255 = Index::from_path(255, "./data/osrs_cache/main_file_cache.idx255")?;
 
     assert_eq!(index2.id, 2);
     assert_eq!(index15.id, 15);

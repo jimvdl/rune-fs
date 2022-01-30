@@ -17,9 +17,9 @@ use nom::{
 /// # Example
 ///
 /// ```
-/// use rscache::parse::rs_string;
+/// use runefs::parse::rs_string;
 ///
-/// # fn main() -> rscache::Result<()> {
+/// # fn main() -> Result<(), runefs::Error> {
 /// let buffer = &[82, 117, 110, 105, 116, 101, 32, 98, 97, 114, 0, 52, 14, 85, 65, 4, 56];
 ///
 /// let (buffer, string) = rs_string(buffer)?;
@@ -84,9 +84,9 @@ pub fn be_i16_smart<'a, E: ParseError<&'a [u8]>>(buffer: &'a [u8]) -> IResult<&'
 /// # Example
 ///
 /// ```
-/// use rscache::parse::be_u16_smart;
+/// use runefs::parse::be_u16_smart;
 ///
-/// # fn main() -> rscache::Result<()> {
+/// # fn main() -> Result<(), runefs::Error> {
 /// let buffer = &[17, 142, 64, 4, 24, 254];
 ///
 /// let (buffer, value1) = be_u16_smart(buffer)?;
@@ -117,9 +117,9 @@ pub fn be_u16_smart<'a, E: ParseError<&'a [u8]>>(buffer: &'a [u8]) -> IResult<&'
 /// # Example
 ///
 /// ```
-/// use rscache::parse::be_u32_smart;
+/// use runefs::parse::be_u32_smart;
 ///
-/// # fn main() -> rscache::Result<()> {
+/// # fn main() -> Result<(), runefs::Error> {
 /// let buffer = &[255, 54, 2, 0, 62, 1, 42, 233];
 ///
 /// let (buffer, value1) = be_u32_smart(buffer)?;
