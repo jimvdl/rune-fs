@@ -34,6 +34,7 @@ pub struct Encoded;
 /// Marker struct conveying `State` of a [`Buffer`](Buffer).
 pub struct Decoded;
 
+/// Primary way to store bytes for encoding and decoding.
 pub struct Buffer<State> {
     compression: Compression,
     buffer: Vec<u8>,
@@ -43,6 +44,25 @@ pub struct Buffer<State> {
 }
 
 impl Buffer<Decoded> {
+    /// Encodes the buffer, consuming self and returning a `Buffer<Encoded>`.
+    ///
+    /// The following process takes place when encoding:
+    /// 1. Compress the buffer with the selected compression format.
+    /// 2. Allocate a new buffer.
+    /// 3. Push the compression type as a byte into the new buffer.
+    /// 4. Push the length (u32) into the buffer of the compressed data from step 1.
+    /// 5. If a compression type was selected (and not `Compression::None`) insert the uncompressed length as u32.
+    /// 6. Extend the buffer with the compressed data.
+    /// 7. Add the `version` as i16 if present.
+    /// 8. Encode complete.
+    ///
+    /// **NOTE: When compressing with gzip the header is removed
+    /// before the compressed data is returned.
+    /// The encoded buffer will not contain the gzip header.**
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the data couldn't be compressed or is invalid.
     pub fn encode(self) -> crate::Result<Buffer<Encoded>> {
         let decompressed_len = self.buffer.len();
         let mut compressed_data = match self.compression {
@@ -77,7 +97,20 @@ impl Buffer<Decoded> {
 }
 
 impl Buffer<Encoded> {
-    // TODO: add warning that lzma can panic if wrong
+    /// Decodes the buffer, consuming self and returning a `Buffer<Decoded>`.
+    ///
+    /// The following process takes place when decoding:
+    /// 1. Read the first byte to determine which compression type should be used to decompress.
+    /// 2. Read the length of the rest of the buffer.
+    /// 3. Decompress the remaining bytes.
+    ///
+    /// # Panics
+    /// 
+    /// When data can't be decompressed using LZMA this function panics.
+    /// 
+    /// # Errors
+    ///
+    /// Returns an error if the remaining bytes couldn't be decompressed.
     pub fn decode(self) -> crate::Result<Buffer<Decoded>> {
         let (buffer, compression) = be_u8(self.buffer.as_slice())?;
         let compression = Compression::try_from(compression)?;
@@ -109,21 +142,25 @@ impl Buffer<Encoded> {
 }
 
 impl<State> Buffer<State> {
+    /// Set the compression format for this buffer returning a new instance of `Self`.
     pub fn with_compression(mut self, compression: Compression) -> Self {
         self.compression = compression;
         self
     }
 
+    /// Set the version for this buffer returning a new instance of `Self`.
     pub fn with_version(mut self, version: i16) -> Self {
         self.version = Some(version);
         self
     }
 
+    /// Set the xtea keys for this buffer returning a new instance of `Self`.
     pub fn with_xtea_keys(mut self, keys: [u32; 4]) -> Self {
         self.keys = Some(keys);
         self
     }
 
+    /// Convert the `Buffer` with its current state into a raw `Vec<u8>`.
     #[inline]
     pub fn finalize(self) -> Vec<u8> {
         self.buffer
