@@ -40,9 +40,8 @@ pub struct Indices(pub(crate) HashMap<u8, Index>);
 impl Indices {
     /// Allocates an `Index` for every valid index file in the cache directory.
     ///
-    /// An index is considered _valid_ if it is present. Meaning it will scan the directory
-    /// for every index id from 0 up to 255 and load them into memory if the file exists.
-    /// Any invalid indices are simply skipped.
+    /// An index is considered _valid_ if it is present, meaning it will scan the directory
+    /// for the `.idx#` suffix and load them into memory.
     ///
     /// # Errors
     ///
@@ -86,8 +85,7 @@ impl Indices {
                     },
                 )?;
                 if archive_ref.length != 0 {
-                    let buffer = dat2.read(archive_ref)?.decode()?;
-                    index.metadata = IndexMetadata::try_from(buffer)?;
+                    index.metadata = dat2.metadata(archive_ref)?;
                 }
                 indices.insert(index_id, index);
             }
@@ -133,7 +131,7 @@ impl Index {
         let extension = path
             .extension()
             .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or("");
+            .unwrap_or("nothing");
 
         if extension != index_extension {
             panic!("index extension mismatch: expected {index_extension} but found {extension}");
@@ -187,23 +185,17 @@ impl<'a> IntoIterator for &'a Indices {
     }
 }
 
-/// All of the index metadata read from the reference index.
-// TODO: figure out a way to allocate this less error prone
+/// All of the index metadata fetched through `Dat2` from the metadata table.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Default, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct IndexMetadata(Vec<ArchiveMetadata>);
 
 impl IndexMetadata {
-    #[inline]
-    pub fn iter(&self) -> Iter<'_, ArchiveMetadata> {
-        self.0.iter()
+    pub(crate) fn from_buffer(buffer: Buffer<Decoded>) -> crate::Result<Self> {
+        Self::from_slice(buffer.as_slice())
     }
-}
 
-impl std::convert::TryFrom<&[u8]> for IndexMetadata {
-    type Error = crate::error::Error;
-
-    fn try_from(buffer: &[u8]) -> Result<Self, Self::Error> {
+    pub(crate) fn from_slice(buffer: &[u8]) -> crate::Result<Self> {
         let (buffer, protocol) = be_u8(buffer)?;
         let (buffer, _) = cond(protocol >= 6, be_u32)(buffer)?;
         let (buffer, identified, whirlpool, codec, hash) = parse_identified(buffer)?;
@@ -247,13 +239,10 @@ impl std::convert::TryFrom<&[u8]> for IndexMetadata {
         }
         Ok(Self(archives))
     }
-}
 
-impl std::convert::TryFrom<Buffer<Decoded>> for IndexMetadata {
-    type Error = crate::error::Error;
-
-    fn try_from(buffer: Buffer<Decoded>) -> Result<Self, Self::Error> {
-        Self::try_from(buffer.as_slice())
+    #[inline]
+    pub fn iter(&self) -> Iter<'_, ArchiveMetadata> {
+        self.0.iter()
     }
 }
 

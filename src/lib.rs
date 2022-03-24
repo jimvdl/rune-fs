@@ -57,24 +57,24 @@ impl Dat2 {
     }
 
     /// Read all the data that belongs to the `ArchiveRef`.
-    pub fn read(&self, archive: &ArchiveRef) -> crate::Result<Buffer<Encoded>> {
-        let mut buffer = Buffer::from(Vec::with_capacity(archive.length));
-        self.read_into_writer(archive, &mut buffer)?;
+    pub fn read(&self, archive_ref: &ArchiveRef) -> crate::Result<Buffer<Encoded>> {
+        let mut buffer = Buffer::from(Vec::with_capacity(archive_ref.length));
+        self.read_into_writer(archive_ref, &mut buffer)?;
 
-        assert_eq!(buffer.len(), archive.length);
+        assert_eq!(buffer.len(), archive_ref.length);
 
         Ok(buffer)
     }
 
     /// Read all the data that belongs to the `ArchiveRef` into the given writer.
-    pub fn read_into_writer<W>(&self, archive: &ArchiveRef, writer: &mut W) -> crate::Result<()>
+    pub fn read_into_writer<W>(&self, archive_ref: &ArchiveRef, writer: &mut W) -> crate::Result<()>
     where
         W: Write,
     {
-        let mut current = archive.sector;
-        let header_size = SectorHeaderSize::from(archive);
+        let mut current = archive_ref.sector;
+        let header_size = SectorHeaderSize::from(archive_ref);
 
-        for (chunk, data_len) in archive.data_blocks().enumerate() {
+        for (chunk, data_len) in archive_ref.data_blocks().enumerate() {
             let offset = current * SECTOR_SIZE;
 
             let data_block = &self.0[offset..offset + data_len];
@@ -82,15 +82,20 @@ impl Dat2 {
                 Ok(sector) => {
                     sector
                         .header
-                        .validate(archive.id, chunk, archive.index_id)?;
+                        .validate(archive_ref.id, chunk, archive_ref.index_id)?;
                     current = sector.header.next;
                     writer.write_all(sector.data_block)?;
                 }
-                Err(_) => return Err(ParseError::Sector(archive.sector).into()),
+                Err(_) => return Err(ParseError::Sector(archive_ref.sector).into()),
             };
         }
 
         Ok(())
+    }
+
+    pub fn metadata(&self, archive_ref: &ArchiveRef) -> crate::Result<IndexMetadata> {
+        let buffer = self.read(archive_ref)?.decode()?;
+        IndexMetadata::from_buffer(buffer)
     }
 }
 
