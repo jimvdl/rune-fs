@@ -15,7 +15,7 @@ use serde_big_array::big_array;
 big_array! { BigArray; }
 
 use crate::{
-    archive::{ArchiveRef, ArchiveMetadata, ARCHIVE_REF_LEN},
+    archive::{ArchiveMetadata, ArchiveRef, ARCHIVE_REF_LEN},
     error::{ParseError, ReadError},
     Dat2, REFERENCE_TABLE_ID,
 };
@@ -27,8 +27,8 @@ use nom::{
     number::complete::{be_i32, be_u16, be_u32, be_u8},
 };
 
-use crate::parse::be_u32_smart;
 use crate::codec::{Buffer, Decoded};
+use crate::parse::be_u32_smart;
 
 pub const IDX_PREFIX: &str = "main_file_cache.idx";
 
@@ -39,54 +39,58 @@ pub struct Indices(pub(crate) HashMap<u8, Index>);
 
 impl Indices {
     /// Allocates an `Index` for every valid index file in the cache directory.
-    /// 
+    ///
     /// An index is considered _valid_ if it is present. Meaning it will scan the directory
     /// for every index id from 0 up to 255 and load them into memory if the file exists.
     /// Any invalid indices are simply skipped.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Constructing this type is quite error prone, it needs to do quite a bit of book-keeping
     /// to get its allocation right. However, if the cache is unchanged _and_ in its proper format
     /// it will, most likely, succeed.
-    /// 
+    ///
     /// The primary errors have to do with I/O, in order to read every index successfully it needs
-    /// a `Dat2` reference and the metadata index. 
-    /// 
+    /// a `Dat2` reference and the metadata index.
+    ///
     /// If an index is found it needs to load its entire contents and parse it, failure at this point
     /// is considered a bug.
     pub fn new<P: AsRef<Path>>(path: P) -> crate::Result<Self> {
         let path = path.as_ref();
-        
+
         let ref_index = Index::from_path(
             REFERENCE_TABLE_ID,
             path.join(format!("{}{}", IDX_PREFIX, REFERENCE_TABLE_ID)),
         )?;
-        
         let dat2 = Dat2::new(path.join(crate::MAIN_DATA))?;
         let mut indices = HashMap::with_capacity(255);
 
-        for index_id in 0..REFERENCE_TABLE_ID {
-            let path = path.join(format!("{}{}", IDX_PREFIX, index_id));
+        for p in std::fs::read_dir(path)? {
+            let path = p?.path();
 
-            if !path.exists() {
-                continue;
+            let ext = path
+                .extension()
+                .and_then(std::ffi::OsStr::to_str)
+                .unwrap_or("invalid");
+
+            if let Some(index_id) = ext.strip_prefix("idx") {
+                let index_id: u8 = index_id.parse().ok().unwrap();
+                if index_id == 255 {
+                    continue;
+                }
+                let mut index = Index::from_path(index_id, path)?;
+                let archive_ref = ref_index.archive_refs.get(&(index_id as u32)).ok_or(
+                    ReadError::ArchiveNotFound {
+                        idx: REFERENCE_TABLE_ID,
+                        arc: index_id as u32,
+                    },
+                )?;
+                if archive_ref.length != 0 {
+                    let buffer = dat2.read(archive_ref)?.decode()?;
+                    index.metadata = IndexMetadata::try_from(buffer)?;
+                }
+                indices.insert(index_id, index);
             }
-            let mut index = Index::from_path(index_id, path)?;
-
-            let archive_ref = ref_index.archive_refs.get(&(index_id as u32)).ok_or(
-                ReadError::ArchiveNotFound {
-                    idx: REFERENCE_TABLE_ID,
-                    arc: index_id as u32,
-                },
-            )?;
-
-            if archive_ref.length != 0 {
-                let buffer = dat2.read(archive_ref)?.decode()?;
-                index.metadata = IndexMetadata::try_from(buffer)?;
-            }
-
-            indices.insert(index_id, index);
         }
 
         indices.insert(REFERENCE_TABLE_ID, ref_index);
@@ -114,14 +118,14 @@ pub struct Index {
 
 impl Index {
     /// Creates an `Index` from a file path.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// When an index is loaded the given id and its file extension are compared, if these mismatch
     /// it is considered a bug.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// The primary errors concern I/O where the file couldn't be opened or read.
     pub fn from_path<P: AsRef<Path>>(id: u8, path: P) -> crate::Result<Self> {
         let path = path.as_ref();
@@ -407,6 +411,22 @@ fn parse_entry_counts(
         .collect();
 
     Ok((buffer, entry_counts))
+}
+
+#[test]
+fn correct_layout() -> crate::Result<()> {
+    let mut map: HashMap<u8, u8> = (0..=20).into_iter().map(|i| (i, i)).collect();
+    map.insert(255, 255);
+
+    let indices: HashMap<u8, u8> = Indices::new("./data/osrs_cache")?
+        .0
+        .into_iter()
+        .map(|(k, i)| (k, i.id))
+        .collect();
+
+    assert_eq!(map, indices);
+
+    Ok(())
 }
 
 #[test]
