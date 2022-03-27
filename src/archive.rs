@@ -204,6 +204,7 @@ impl<'a> IntoIterator for &'a ArchiveFileGroup {
         self.0.iter()
     }
 }
+
 #[test]
 fn parse_archive() -> crate::Result<()> {
     let buffer = &[0, 0, 77, 0, 1, 196];
