@@ -67,27 +67,24 @@ impl Indices {
         for p in std::fs::read_dir(path)? {
             let path = p?.path();
 
-            let ext = path
-                .extension()
-                .and_then(std::ffi::OsStr::to_str)
-                .unwrap_or("invalid");
-
-            if let Some(index_id) = ext.strip_prefix("idx") {
-                let index_id: u8 = index_id.parse().ok().unwrap();
-                if index_id == 255 {
-                    continue;
+            if let Some(ext) = path.extension().and_then(std::ffi::OsStr::to_str) {
+                if let Some(index_id) = ext.strip_prefix("idx") {
+                    let index_id: u8 = index_id.parse().expect("invalid extension format");
+                    if index_id == 255 {
+                        continue;
+                    }
+                    let mut index = Index::from_path(index_id, path)?;
+                    let archive_ref = ref_index.archive_refs.get(&(index_id as u32)).ok_or(
+                        ReadError::ArchiveNotFound {
+                            idx: REFERENCE_TABLE_ID,
+                            arc: index_id as u32,
+                        },
+                    )?;
+                    if archive_ref.length != 0 {
+                        index.metadata = dat2.metadata(archive_ref)?;
+                    }
+                    indices.insert(index_id, index);
                 }
-                let mut index = Index::from_path(index_id, path)?;
-                let archive_ref = ref_index.archive_refs.get(&(index_id as u32)).ok_or(
-                    ReadError::ArchiveNotFound {
-                        idx: REFERENCE_TABLE_ID,
-                        arc: index_id as u32,
-                    },
-                )?;
-                if archive_ref.length != 0 {
-                    index.metadata = dat2.metadata(archive_ref)?;
-                }
-                indices.insert(index_id, index);
             }
         }
 
@@ -197,6 +194,7 @@ impl IndexMetadata {
 
     pub(crate) fn from_slice(buffer: &[u8]) -> crate::Result<Self> {
         let (buffer, protocol) = be_u8(buffer)?;
+        // TODO: should actually parse this and add it to the struct
         let (buffer, _) = cond(protocol >= 6, be_u32)(buffer)?;
         let (buffer, identified, whirlpool, codec, hash) = parse_identified(buffer)?;
         let (buffer, archive_count) = parse_archive_count(buffer, protocol)?;
@@ -205,7 +203,7 @@ impl IndexMetadata {
         let (buffer, crcs) = many_m_n(0, archive_count, be_u32)(buffer)?;
         let (buffer, hashes) = parse_hashes(buffer, hash, archive_count)?;
         let (buffer, whirlpools) = parse_whirlpools(buffer, whirlpool, archive_count)?;
-        // skip for now
+        // skip for now TODO: should also be saved in the struct
         //let (buffer, compressed, decompressed) = parse_codec(buffer, codec, archive_count)?;
         let (buffer, _) = cond(codec, many_m_n(0, archive_count * 8, be_u8))(buffer)?;
         let (buffer, versions) = many_m_n(0, archive_count, be_u32)(buffer)?;
@@ -400,39 +398,4 @@ fn parse_entry_counts(
         .collect();
 
     Ok((buffer, entry_counts))
-}
-
-#[test]
-fn correct_layout() -> crate::Result<()> {
-    let mut map: HashMap<u8, u8> = (0..=20).into_iter().map(|i| (i, i)).collect();
-    map.insert(255, 255);
-
-    let indices: HashMap<u8, u8> = Indices::new("./data/osrs_cache")?
-        .0
-        .into_iter()
-        .map(|(k, i)| (k, i.id))
-        .collect();
-
-    assert_eq!(map, indices);
-
-    Ok(())
-}
-
-#[test]
-fn from_path_correct_extension() -> crate::Result<()> {
-    let index2 = Index::from_path(2, "./data/osrs_cache/main_file_cache.idx2")?;
-    let index15 = Index::from_path(15, "./data/osrs_cache/main_file_cache.idx15")?;
-    let index255 = Index::from_path(255, "./data/osrs_cache/main_file_cache.idx255")?;
-
-    assert_eq!(index2.id, 2);
-    assert_eq!(index15.id, 15);
-    assert_eq!(index255.id, 255);
-
-    Ok(())
-}
-
-#[test]
-#[should_panic]
-fn from_path_incorrect_extension() {
-    Index::from_path(2, "../data/osrs_cache/main_file_cache.idx1").unwrap();
 }
