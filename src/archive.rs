@@ -3,10 +3,7 @@ use std::slice::{Iter, IterMut};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "serde")]
-use serde_big_array::big_array;
-#[cfg(feature = "serde")]
-#[cfg(not(doc))]
-big_array! { BigArray; }
+use serde_big_array::BigArray;
 
 use nom::number::complete::be_u24;
 

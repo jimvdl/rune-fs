@@ -8,11 +8,6 @@ use std::{
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "serde")]
-use serde_big_array::big_array;
-#[cfg(feature = "serde")]
-#[cfg(not(doc))]
-big_array! { BigArray; }
 
 use crate::{
     archive::{ArchiveMetadata, ArchiveRef, ARCHIVE_REF_LEN},
