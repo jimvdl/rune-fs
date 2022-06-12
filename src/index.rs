@@ -183,7 +183,13 @@ impl<'a> IntoIterator for &'a Indices {
 pub struct IndexMetadata(Vec<ArchiveMetadata>);
 
 impl IndexMetadata {
-    pub(crate) fn from_buffer(buffer: Buffer<Decoded>) -> crate::Result<Self> {
+    /// Takes a specific raw metadata buffer and turns it into a `IndexMetadata`. 
+    /// 
+    /// # Errors
+    /// 
+    /// If, for what ever reason, the buffer does not _exactly_ adhere to the correct
+    /// format parsing will fail.
+    pub fn from_buffer(buffer: Buffer<Decoded>) -> crate::Result<Self> {
         Self::from_slice(buffer.as_slice())
     }
 
