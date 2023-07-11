@@ -232,7 +232,7 @@ impl IndexMetadata {
                 hash,
                 whirlpool,
                 version,
-                entry_count: entry_count as usize,
+                entry_count,
                 valid_ids,
             });
         }
@@ -330,9 +330,9 @@ fn parse_valid_ids<'a>(
 
     for entry_count in entry_counts {
         let (buf, id_modifiers) = if protocol >= 7 {
-            many_m_n(0, *entry_count as usize, be_u32_smart)(buffer)?
+            many_m_n(0, *entry_count, be_u32_smart)(buffer)?
         } else {
-            let (buf, result) = many_m_n(0, *entry_count as usize, be_u16)(buffer)?;
+            let (buf, result) = many_m_n(0, *entry_count, be_u16)(buffer)?;
             let result = result.iter().map(|&id_mod| id_mod as u32).collect();
 
             (buf, result)
@@ -342,7 +342,7 @@ fn parse_valid_ids<'a>(
         let mut ids = Vec::with_capacity(id_modifiers.len());
         let mut id = 0_u32;
         for current_id in id_modifiers {
-            id += current_id as u32;
+            id += current_id;
             ids.push(id);
         }
 
