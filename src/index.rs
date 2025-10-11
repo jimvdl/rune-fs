@@ -19,7 +19,7 @@ use nom::{
     bytes::complete::take,
     combinator::cond,
     multi::{many0, many_m_n},
-    number::complete::{be_i32, be_u16, be_u32, be_u8},
+    number::complete::{be_i32, be_u16, be_u32, be_u8}, Parser,
 };
 
 use crate::codec::{Buffer, Decoded};
@@ -193,18 +193,18 @@ impl IndexMetadata {
     pub(crate) fn from_slice(buffer: &[u8]) -> crate::Result<Self> {
         let (buffer, protocol) = be_u8(buffer)?;
         // TODO: should actually parse this and add it to the struct
-        let (buffer, _) = cond(protocol >= 6, be_u32)(buffer)?;
+        let (buffer, _) = cond(protocol >= 6, be_u32).parse(buffer)?;
         let (buffer, identified, whirlpool, codec, hash) = parse_identified(buffer)?;
         let (buffer, archive_count) = parse_archive_count(buffer, protocol)?;
         let (buffer, ids) = parse_ids(buffer, protocol, archive_count)?;
         let (buffer, name_hashes) = parse_hashes(buffer, identified, archive_count)?;
-        let (buffer, crcs) = many_m_n(0, archive_count, be_u32)(buffer)?;
+        let (buffer, crcs) = many_m_n(0, archive_count, be_u32).parse(buffer)?;
         let (buffer, hashes) = parse_hashes(buffer, hash, archive_count)?;
         let (buffer, whirlpools) = parse_whirlpools(buffer, whirlpool, archive_count)?;
         // skip for now TODO: should also be saved in the struct
         //let (buffer, compressed, decompressed) = parse_codec(buffer, codec, archive_count)?;
-        let (buffer, _) = cond(codec, many_m_n(0, archive_count * 8, be_u8))(buffer)?;
-        let (buffer, versions) = many_m_n(0, archive_count, be_u32)(buffer)?;
+        let (buffer, _) = cond(codec, many_m_n(0, archive_count * 8, be_u8)).parse(buffer)?;
+        let (buffer, versions) = many_m_n(0, archive_count, be_u32).parse(buffer)?;
         let (buffer, entry_counts) = parse_entry_counts(buffer, protocol, archive_count)?;
         let (_, valid_ids) = parse_valid_ids(buffer, protocol, &entry_counts)?;
         let mut archives = Vec::with_capacity(archive_count);
@@ -286,8 +286,8 @@ fn parse_hashes(
     hash: bool,
     archive_count: usize,
 ) -> crate::Result<(&[u8], Vec<i32>)> {
-    let (buffer, taken) = cond(hash, take(archive_count * 4))(buffer)?;
-    let (_, mut hashes) = many0(be_i32)(taken.unwrap_or(&[]))?;
+    let (buffer, taken) = cond(hash, take(archive_count * 4)).parse(buffer)?;
+    let (_, mut hashes) = many0(be_i32).parse(taken.unwrap_or(&[]))?;
 
     if hashes.len() != archive_count {
         hashes = vec![0; archive_count * 4];
@@ -301,7 +301,7 @@ fn parse_whirlpools(
     whirlpool: bool,
     archive_count: usize,
 ) -> crate::Result<(&[u8], Vec<[u8; 64]>)> {
-    let (buffer, taken) = cond(whirlpool, take(archive_count * 64))(buffer)?;
+    let (buffer, taken) = cond(whirlpool, take(archive_count * 64)).parse(buffer)?;
     let mut whirlpools = vec![[0; 64]; archive_count];
 
     for (index, chunk) in taken.unwrap_or(&[]).chunks_exact(64).enumerate() {
@@ -327,9 +327,9 @@ fn parse_valid_ids<'a>(
 
     for entry_count in entry_counts {
         let (buf, id_modifiers) = if protocol >= 7 {
-            many_m_n(0, *entry_count, be_u32_smart)(buffer)?
+            many_m_n(0, *entry_count, be_u32_smart).parse(buffer)?
         } else {
-            let (buf, result) = many_m_n(0, *entry_count, be_u16)(buffer)?;
+            let (buf, result) = many_m_n(0, *entry_count, be_u16).parse(buffer)?;
             let result = result.iter().map(|&id_mod| id_mod as u32).collect();
 
             (buf, result)
@@ -366,9 +366,9 @@ fn parse_ids(
     archive_count: usize,
 ) -> crate::Result<(&[u8], Vec<u32>)> {
     let (buffer, ids) = if protocol >= 7 {
-        many_m_n(0, archive_count, be_u32_smart)(buffer)?
+        many_m_n(0, archive_count, be_u32_smart).parse(buffer)?
     } else {
-        let (buf, res) = many_m_n(0, archive_count, be_u16)(buffer)?;
+        let (buf, res) = many_m_n(0, archive_count, be_u16).parse(buffer)?;
         let res = res.iter().map(|&ec| ec as u32).collect();
         (buf, res)
     };
@@ -382,9 +382,9 @@ fn parse_entry_counts(
     archive_count: usize,
 ) -> crate::Result<(&[u8], Vec<usize>)> {
     let (buffer, entry_counts) = if protocol >= 7 {
-        many_m_n(0, archive_count, be_u32_smart)(buffer)?
+        many_m_n(0, archive_count, be_u32_smart).parse(buffer)?
     } else {
-        let (buf, res) = many_m_n(0, archive_count, be_u16)(buffer)?;
+        let (buf, res) = many_m_n(0, archive_count, be_u16).parse(buffer)?;
         let res = res.iter().map(|&ec| ec as u32).collect();
 
         (buf, res)

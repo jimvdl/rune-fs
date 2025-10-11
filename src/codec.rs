@@ -11,7 +11,7 @@ use flate2::{bufread::GzDecoder, write::GzEncoder};
 use lzma_rs::{compress, decompress, lzma_compress_with_options, lzma_decompress_with_options};
 use nom::{
     combinator::cond,
-    number::complete::{be_i16, be_u32, be_u8},
+    number::complete::{be_i16, be_u32, be_u8}, Parser,
 };
 
 use crate::{error::CompressionUnsupported, xtea};
@@ -274,7 +274,7 @@ fn compress_lzma(data: &[u8]) -> io::Result<Vec<u8>> {
 
 fn decompress_none(buffer: &[u8], len: usize) -> crate::Result<(Option<i16>, Vec<u8>)> {
     let (buffer, data) = nom::bytes::complete::take(len)(buffer)?;
-    let (_, version) = cond(buffer.len() >= 2, be_i16)(buffer)?;
+    let (_, version) = cond(buffer.len() >= 2, be_i16).parse(buffer)?;
 
     Ok((version, data.to_vec()))
 }
@@ -282,7 +282,7 @@ fn decompress_none(buffer: &[u8], len: usize) -> crate::Result<(Option<i16>, Vec
 fn decompress_bzip2(buffer: &[u8], len: usize) -> crate::Result<(Option<i16>, Vec<u8>)> {
     let (buffer, decompressed_len) = be_u32(buffer)?;
     let (buffer, data) = nom::bytes::complete::take(len)(buffer)?;
-    let (_, version) = cond(buffer.len() >= 2, be_i16)(buffer)?;
+    let (_, version) = cond(buffer.len() >= 2, be_i16).parse(buffer)?;
 
     let mut compressed_data = data.to_vec();
     compressed_data[4..len].copy_from_slice(&data[..len - 4]);
@@ -298,7 +298,7 @@ fn decompress_bzip2(buffer: &[u8], len: usize) -> crate::Result<(Option<i16>, Ve
 fn decompress_gzip(buffer: &[u8], len: usize) -> crate::Result<(Option<i16>, Vec<u8>)> {
     let (buffer, decompressed_len) = be_u32(buffer)?;
     let (buffer, data) = nom::bytes::complete::take(len)(buffer)?;
-    let (_, version) = cond(buffer.len() >= 2, be_i16)(buffer)?;
+    let (_, version) = cond(buffer.len() >= 2, be_i16).parse(buffer)?;
 
     let mut decompressor = GzDecoder::new(data);
     let mut decompressed_data = vec![0; decompressed_len as usize];
@@ -311,7 +311,7 @@ fn decompress_gzip(buffer: &[u8], len: usize) -> crate::Result<(Option<i16>, Vec
 fn decompress_lzma(buffer: &[u8], len: usize) -> crate::Result<(Option<i16>, Vec<u8>)> {
     let (buffer, decompressed_len) = be_u32(buffer)?;
     let (buffer, data) = nom::bytes::complete::take(len)(buffer)?;
-    let (_, version) = cond(buffer.len() >= 2, be_i16)(buffer)?;
+    let (_, version) = cond(buffer.len() >= 2, be_i16).parse(buffer)?;
 
     let mut decompressed_data = Vec::with_capacity(decompressed_len as usize);
     let mut wrapper = BufReader::new(data);

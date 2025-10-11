@@ -128,7 +128,7 @@ pub enum SectorHeaderSize {
 
 impl From<&ArchiveRef> for SectorHeaderSize {
     fn from(archive: &ArchiveRef) -> Self {
-        if archive.id > std::u16::MAX.into() {
+        if archive.id > u16::MAX.into() {
             Self::Expanded
         } else {
             Self::Normal

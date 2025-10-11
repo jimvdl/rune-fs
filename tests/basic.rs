@@ -16,7 +16,7 @@ mod osrs {
 
     #[test]
     fn correct_layout() {
-        let mut map: HashMap<u8, u8> = (0..=20).into_iter().map(|i| (i, i)).collect();
+        let mut map: HashMap<u8, u8> = (0..=20).map(|i| (i, i)).collect();
         map.insert(255, 255);
 
         let indices: HashMap<u8, u8> = Indices::new("./data/osrs_cache")
@@ -64,7 +64,7 @@ mod rs3 {
 
     #[test]
     fn correct_layout() {
-        let mut map: HashMap<u8, u8> = (0..=56).into_iter().map(|i| (i, i)).collect();
+        let mut map: HashMap<u8, u8> = (0..=56).map(|i| (i, i)).collect();
         map.insert(255, 255);
 
         let indices: HashMap<u8, u8> = Indices::new("./data/rs3_cache")
