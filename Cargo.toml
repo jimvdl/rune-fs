@@ -1,6 +1,6 @@
 [package]
 name = "rune-fs"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["jimvdl <jimvdlind@gmail.com>"]
 edition = "2021"
 license = "MIT"
