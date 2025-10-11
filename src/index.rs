@@ -1,6 +1,6 @@
 use std::{
     collections::{hash_map, HashMap},
-    fs::File,
+    fs::{self, File},
     io::Read,
     path::Path,
     slice::Iter,
@@ -33,22 +33,19 @@ pub const IDX_PREFIX: &str = "main_file_cache.idx";
 pub struct Indices(pub(crate) HashMap<u8, Index>);
 
 impl Indices {
-    /// Allocates an `Index` for every valid index file in the cache directory.
-    ///
-    /// An index is considered _valid_ if it is present, meaning it will scan the directory
-    /// for the `.idx#` suffix and load them into memory.
+    /// Allocates an [`Index`] for every `.idx` file in the root directory.
     ///
     /// # Errors
     ///
-    /// Constructing this type is quite error prone, it needs to do quite a bit of book-keeping
-    /// to get its allocation right. However, if the cache is unchanged _and_ in its proper format
-    /// it will, most likely, succeed.
+    /// Constructing this type is quite error prone, it needs to do quite a bit 
+    /// of book-keeping to get its allocation right. However, if the cache is 
+    /// unchanged _and_ in its proper format it will, most likely, succeed.
     ///
-    /// The primary errors have to do with I/O, in order to read every index successfully it needs
-    /// a `Dat2` reference and the metadata index.
+    /// The primary errors have to do with I/O, in order to read every index 
+    /// successfully it needs a `Dat2` reference and the metadata index.
     ///
-    /// If an index is found it needs to load its entire contents and parse it, failure at this point
-    /// is considered a bug.
+    /// If an index is found it needs to load its entire contents and parse it, 
+    /// failure at this point is considered a bug.
     pub fn new<P: AsRef<Path>>(path: P) -> crate::Result<Self> {
         let path = path.as_ref();
 
@@ -59,7 +56,7 @@ impl Indices {
         let dat2 = Dat2::new(path.join(crate::MAIN_DATA))?;
         let mut indices = HashMap::with_capacity(255);
 
-        for p in std::fs::read_dir(path)? {
+        for p in fs::read_dir(path)? {
             let path = p?.path();
 
             if let Some(ext) = path.extension().and_then(std::ffi::OsStr::to_str) {
