@@ -110,17 +110,12 @@ impl<'a> SectorHeader {
     }
 }
 
-impl Default for SectorHeaderSize {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
-
 /// Used to convey a sector's header size when parsing from a raw buffer.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub enum SectorHeaderSize {
     /// 8 byte header length.
+    #[default]
     Normal,
     /// 10 byte header length.
     Expanded,

@@ -59,8 +59,8 @@ impl Indices {
         for p in fs::read_dir(path)? {
             let path = p?.path();
 
-            if let Some(ext) = path.extension().and_then(std::ffi::OsStr::to_str) {
-                if let Some(index_id) = ext.strip_prefix("idx") {
+            if let Some(ext) = path.extension().and_then(std::ffi::OsStr::to_str)
+                && let Some(index_id) = ext.strip_prefix("idx") {
                     let index_id: u8 = index_id.parse().expect("invalid extension format");
                     if index_id == 255 {
                         continue;
@@ -77,7 +77,6 @@ impl Indices {
                     }
                     indices.insert(index_id, index);
                 }
-            }
         }
 
         indices.insert(REFERENCE_TABLE_ID, ref_index);

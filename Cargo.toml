@@ -1,8 +1,8 @@
 [package]
 name = "rune-fs"
-version = "0.1.6"
+version = "0.2.0"
 authors = ["jimvdl <jimvdlind@gmail.com>"]
-edition = "2021"
+edition = "2024"
 license = "MIT"
 description = "Read-only, low level, virtual file types for the RuneScape file system."
 repository = "https://github.com/jimvdl/rune-fs"
@@ -11,6 +11,7 @@ readme = "README.md"
 keywords = ["runescape", "osrs", "rs3"]
 exclude = [".gitignore", "data/*"]
 categories = ["development-tools", "filesystem"]
+rust-version = "1.88.0"
 
 [features]
 rs3 = ["dep:lzma-rs"]
